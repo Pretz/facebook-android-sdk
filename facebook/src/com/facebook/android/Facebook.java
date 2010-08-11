@@ -98,50 +98,53 @@ public class Facebook {
      *            Callback interface for notifying the calling application when
      *            the dialog has completed, failed, or been canceled.
      */
-    public void authorize(Context context,
-    					  String applicationId,
-                          String[] permissions,
-                          final DialogListener listener) {
-        Bundle params = new Bundle();
-        params.putString("client_id", applicationId);
-        if (permissions.length > 0) {
-            params.putString("scope", TextUtils.join(",", permissions));
-        }
-        CookieSyncManager.createInstance(context);
-        dialog(context, LOGIN, params, new DialogListener() {
 
-            public void onComplete(Bundle values) {
-                // ensure any cookies set by the dialog are saved
-                CookieSyncManager.getInstance().sync(); 
-                setAccessToken(values.getString(TOKEN));
-                setAccessExpiresIn(values.getString(EXPIRES));
-                if (isSessionValid()) {
-                    Log.d("Facebook-authorize", "Login Success! access_token=" 
-                        + getAccessToken() + " expires=" + getAccessExpires());
-                    listener.onComplete(values);
-                } else {
-                    onFacebookError(new FacebookError(
-                            "failed to receive access_token"));
-                }                
-            }
+	public void authorize(Context context, String applicationId, String[] permissions,
+			final DialogListener listener) {
+		createAuthDialog(context, applicationId, permissions, listener).show();
+	}
 
-            public void onError(DialogError error) {
-                Log.d("Facebook-authorize", "Login failed: " + error);
-                listener.onError(error);
-            }
+	public FbDialog createAuthDialog(Context context, String applicationId, String[] permissions,
+			final DialogListener listener) {
+		Bundle params = new Bundle();
+		params.putString("client_id", applicationId);
+		if (permissions.length > 0) {
+			params.putString("scope", TextUtils.join(",", permissions));
+		}
+		CookieSyncManager.createInstance(context);
+		return getDialog(context, LOGIN, params, new DialogListener() {
 
-            public void onFacebookError(FacebookError error) {
-                Log.d("Facebook-authorize", "Login failed: " + error);
-                listener.onFacebookError(error);
-            }
+			public void onComplete(Bundle values) {
+				// ensure any cookies set by the dialog are saved
+				CookieSyncManager.getInstance().sync();
+				setAccessToken(values.getString(TOKEN));
+				setAccessExpiresIn(values.getString(EXPIRES));
+				if (isSessionValid()) {
+					Log.d("Facebook-authorize", "Login Success! access_token=" + getAccessToken()
+							+ " expires=" + getAccessExpires());
+					listener.onComplete(values);
+				} else {
+					onFacebookError(new FacebookError("failed to receive access_token"));
+				}
+			}
 
-            public void onCancel() {
-                Log.d("Facebook-authorize", "Login cancelled");
-                listener.onCancel();
-            }
-        });
-    }
-    
+			public void onError(DialogError error) {
+				Log.d("Facebook-authorize", "Login failed: " + error);
+				listener.onError(error);
+			}
+
+			public void onFacebookError(FacebookError error) {
+				Log.d("Facebook-authorize", "Login failed: " + error);
+				listener.onFacebookError(error);
+			}
+
+			public void onCancel() {
+				Log.d("Facebook-authorize", "Login cancelled");
+				listener.onCancel();
+			}
+		});
+	}
+
     /**
      * Invalidate the current user session by removing the access token in
      * memory, clearing the browser cookie, and calling auth.expireSession
@@ -317,6 +320,13 @@ public class Facebook {
         dialog(context, action, new Bundle(), listener);
     }
 
+    public void dialog(Context context, 
+                       String action, 
+                       Bundle parameters,
+                       final DialogListener listener) {
+    	getDialog(context, action, parameters, listener);
+    }
+    
     /**
      * Generate a UI dialog for the request action in the given Android 
      * context with the provided parameters.
@@ -335,7 +345,7 @@ public class Facebook {
      *            Callback interface to notify the application when the dialog
      *            has completed.
      */
-    public void dialog(Context context, 
+    public FbDialog getDialog(Context context, 
                        String action, 
                        Bundle parameters,
                        final DialogListener listener) {
@@ -358,8 +368,9 @@ public class Facebook {
                 != PackageManager.PERMISSION_GRANTED) {
             Util.showAlert(context, "Error", 
                     "Application requires permission to access the Internet");
+            return null;
         } else {
-            new FbDialog(context, url, listener).show();
+            return new FbDialog(context, url, listener);
         }
     }
 

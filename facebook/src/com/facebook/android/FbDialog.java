@@ -83,6 +83,31 @@ public class FbDialog extends Dialog {
         		(int) (dimensions[0] * scale + 0.5f),
         		(int) (dimensions[1] * scale + 0.5f)));
     }
+    
+    @Override
+    public Bundle onSaveInstanceState() {
+    	Bundle state = super.onSaveInstanceState();
+    	if (state == null) {
+    		state = new Bundle();
+    	}
+    	state.putString("url", mUrl);
+    	mWebView.saveState(state);
+    	return state;
+    }
+    
+    @Override
+    public void onRestoreInstanceState(Bundle bundle) {
+    	super.onRestoreInstanceState(bundle);
+    	mUrl = bundle.getString("url");
+    	mWebView.restoreState(bundle);
+    }
+    
+    @Override
+    protected void onStop() {
+    	super.onStop();
+    	mWebView.setWebViewClient(null);
+    	mWebView.stopLoading();
+    }
 
     private void setUpTitle() {
         requestWindowFeature(Window.FEATURE_NO_TITLE);
