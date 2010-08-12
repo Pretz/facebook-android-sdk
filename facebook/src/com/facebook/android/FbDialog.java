@@ -127,6 +127,7 @@ public class FbDialog extends Dialog {
     
     private void setUpWebView() {
         mWebView = new WebView(getContext());
+        mWebView.setId(R.id.dialog_webview);
         mWebView.setVerticalScrollBarEnabled(false);
         mWebView.setHorizontalScrollBarEnabled(false);
         mWebView.setWebViewClient(new FbDialog.FbWebViewClient());
