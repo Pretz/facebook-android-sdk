@@ -57,6 +57,8 @@ public class FbDialog extends Dialog {
     private WebView mWebView;
     private LinearLayout mContent;
     private TextView mTitle;
+    private boolean mIsRestoring;
+    private boolean mFirstStart;
     
     public FbDialog(Context context, String url, DialogListener listener) {
         super(context);
@@ -82,6 +84,7 @@ public class FbDialog extends Dialog {
         addContentView(mContent, new FrameLayout.LayoutParams(
         		(int) (dimensions[0] * scale + 0.5f),
         		(int) (dimensions[1] * scale + 0.5f)));
+        mFirstStart = true;
     }
     
     @Override
@@ -98,8 +101,13 @@ public class FbDialog extends Dialog {
     @Override
     public void onRestoreInstanceState(Bundle bundle) {
     	super.onRestoreInstanceState(bundle);
+    	mIsRestoring = true;
     	mUrl = bundle.getString("url");
     	mWebView.restoreState(bundle);
+    }
+    
+    public void refresh() {
+        mWebView.loadUrl(mUrl);
     }
     
     @Override
@@ -107,6 +115,23 @@ public class FbDialog extends Dialog {
     	super.onStop();
     	mWebView.setWebViewClient(null);
     	mWebView.stopLoading();
+    	mSpinner.dismiss();
+    }
+    
+    @Override
+    protected void onStart() {
+    	super.onStart();
+    	if (mFirstStart && !mIsRestoring) {
+    		mWebView.loadUrl(mUrl);
+    	}
+    	mIsRestoring = false;
+    	mFirstStart = false;
+    }
+    
+    @Override
+    public void cancel() {
+    	super.cancel();
+    	mListener.onCancel();
     }
 
     private void setUpTitle() {
@@ -132,7 +157,6 @@ public class FbDialog extends Dialog {
         mWebView.setHorizontalScrollBarEnabled(false);
         mWebView.setWebViewClient(new FbDialog.FbWebViewClient());
         mWebView.getSettings().setJavaScriptEnabled(true);
-        mWebView.loadUrl(mUrl);
         mWebView.setLayoutParams(FILL);
         mContent.addView(mWebView);
     }
@@ -162,6 +186,7 @@ public class FbDialog extends Dialog {
             // launch non-dialog URLs in a full browser
             getContext().startActivity(
                     new Intent(Intent.ACTION_VIEW, Uri.parse(url))); 
+            mSpinner.dismiss();
             return true;
         }
 
@@ -178,7 +203,9 @@ public class FbDialog extends Dialog {
         public void onPageStarted(WebView view, String url, Bitmap favicon) {
             Log.d("Facebook-WebView", "Webview loading URL: " + url);
             super.onPageStarted(view, url, favicon);
-            mSpinner.show();
+            if (!mSpinner.isShowing()) {
+                mSpinner.show();
+            }
         }
 
         @Override
