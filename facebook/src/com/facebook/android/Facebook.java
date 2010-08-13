@@ -324,7 +324,7 @@ public class Facebook {
                        String action, 
                        Bundle parameters,
                        final DialogListener listener) {
-    	getDialog(context, action, parameters, listener);
+    	getDialog(context, action, parameters, listener).show();
     }
     
     /**
