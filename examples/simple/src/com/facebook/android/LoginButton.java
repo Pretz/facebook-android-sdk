@@ -16,25 +16,26 @@
 
 package com.facebook.android;
 
-import com.facebook.android.BaseRequestListener;
-import com.facebook.android.SessionEvents.AuthListener;
-import com.facebook.android.SessionEvents.LogoutListener;
-import com.facebook.android.Facebook.DialogListener;
-
 import android.content.Context;
 import android.graphics.Color;
-import android.os.Bundle;
 import android.os.Handler;
 import android.util.AttributeSet;
 import android.view.View;
 import android.widget.ImageButton;
+
+import com.facebook.android.SessionEvents.AuthListener;
+import com.facebook.android.SessionEvents.LogoutListener;
 
 public class LoginButton extends ImageButton {
     
     private Facebook mFb;
     private Handler mHandler;
     private SessionListener mSessionListener = new SessionListener();
-    private String[] mPermissions;
+    private LoginButtonListener mListener;
+    
+    public interface LoginButtonListener {
+    	public void showLoginDialog();
+    }
     
     public LoginButton(Context context) {
         super(context);
@@ -48,10 +49,10 @@ public class LoginButton extends ImageButton {
         super(context, attrs, defStyle);
     }
     
-    public void init(final Facebook fb, final String[] permissions) {
+    public void init(final Facebook fb, LoginButtonListener listener) {
         mFb = fb;
-        mPermissions = permissions;
         mHandler = new Handler();
+        mListener = listener;
         
         setBackgroundColor(Color.TRANSPARENT);
         setAdjustViewBounds(true);
@@ -73,27 +74,8 @@ public class LoginButton extends ImageButton {
                 AsyncFacebookRunner asyncRunner = new AsyncFacebookRunner(mFb);
                 asyncRunner.logout(getContext(), new LogoutRequestListener());
             } else {
-                mFb.authorize(getContext(), Example.APP_ID, mPermissions,
-                        new LoginDialogListener());
+            	mListener.showLoginDialog();
             }
-        }
-    }
-
-    private final class LoginDialogListener implements DialogListener {
-        public void onComplete(Bundle values) {
-            SessionEvents.onLoginSuccess();
-        }
-
-        public void onFacebookError(FacebookError error) {
-            SessionEvents.onLoginError(error.getMessage());
-        }
-        
-        public void onError(DialogError error) {
-            SessionEvents.onLoginError(error.getMessage());
-        }
-
-        public void onCancel() {
-            SessionEvents.onLoginError("Action Canceled");
         }
     }
     

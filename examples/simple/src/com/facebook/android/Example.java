@@ -16,15 +16,8 @@
 
 package com.facebook.android;
 
-import org.json.JSONException;
-import org.json.JSONObject;
-
-import com.facebook.android.BaseRequestListener;
-import com.facebook.android.BaseDialogListener;
-import com.facebook.android.SessionEvents.AuthListener;
-import com.facebook.android.SessionEvents.LogoutListener;
-
 import android.app.Activity;
+import android.app.Dialog;
 import android.os.Bundle;
 import android.util.Log;
 import android.view.View;
@@ -32,14 +25,20 @@ import android.view.View.OnClickListener;
 import android.widget.Button;
 import android.widget.TextView;
 
+import org.json.JSONException;
+import org.json.JSONObject;
+
+import com.facebook.android.Facebook.DialogListener;
+import com.facebook.android.SessionEvents.AuthListener;
+import com.facebook.android.SessionEvents.LogoutListener;
+
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.HttpURLConnection;
 import java.net.MalformedURLException;
 import java.net.URL;
 
-
-public class Example extends Activity {
+public class Example extends Activity implements LoginButton.LoginButtonListener {
     
     // Your Facebook Application ID must be set before running this example
     // See http://www.facebook.com/developers/createapp.php
@@ -47,6 +46,8 @@ public class Example extends Activity {
     
     private static final String[] PERMISSIONS =
         new String[] {"publish_stream", "read_stream", "offline_access"};
+    private static final int LOGIN_DIALOG_ID = 42;
+    private static final int PUBLISH_DIALOG_ID = 43; 
     private LoginButton mLoginButton;
     private TextView mText;
     private Button mRequestButton;
@@ -81,7 +82,7 @@ public class Example extends Activity {
         SessionStore.restore(mFacebook, this);
         SessionEvents.addAuthListener(new SampleAuthListener());
         SessionEvents.addLogoutListener(new SampleLogoutListener());
-        mLoginButton.init(mFacebook, PERMISSIONS);
+        mLoginButton.init(mFacebook, this);
         
         mRequestButton.setOnClickListener(new OnClickListener() {
             public void onClick(View v) {
@@ -129,8 +130,7 @@ public class Example extends Activity {
         
         mPostButton.setOnClickListener(new OnClickListener() {
             public void onClick(View v) {
-                mFacebook.dialog(Example.this, "stream.publish", 
-                        new SampleDialogListener());          
+            	showDialog(PUBLISH_DIALOG_ID);
             }
         });
         mPostButton.setVisibility(mFacebook.isSessionValid() ?
@@ -163,6 +163,22 @@ public class Example extends Activity {
             mUploadButton.setVisibility(View.INVISIBLE);
             mPostButton.setVisibility(View.INVISIBLE);
         }
+    }
+    
+    @Override
+    public Dialog onCreateDialog(int dialogId) {
+    	switch (dialogId) {
+    	case LOGIN_DIALOG_ID:
+        	return mFacebook.createAuthDialog(this, Example.APP_ID, PERMISSIONS, new LoginDialogListener());
+    	case PUBLISH_DIALOG_ID:
+    		return mFacebook.getDialog(this, "stream.publish", new Bundle(), new SampleDialogListener());
+   		default:
+   			return super.onCreateDialog(dialogId);
+    	}
+    }
+    
+    public void showLoginDialog() {
+    	showDialog(LOGIN_DIALOG_ID);
     }
     
     public class SampleRequestListener extends BaseRequestListener {
@@ -258,6 +274,7 @@ public class Example extends Activity {
     public class SampleDialogListener extends BaseDialogListener {
 
         public void onComplete(Bundle values) {
+        	removeDialog(PUBLISH_DIALOG_ID);
             final String postId = values.getString("post_id");
             if (postId != null) {
                 Log.d("Facebook-Example", "Dialog Success! post_id=" + postId);
@@ -272,6 +289,43 @@ public class Example extends Activity {
             } else {
                 Log.d("Facebook-Example", "No wall post made");
             }
+        }
+        
+        public void onFacebookError(FacebookError e) {
+            super.onFacebookError(e);
+            removeDialog(PUBLISH_DIALOG_ID);   
+        }
+
+        public void onError(DialogError e) {
+        	super.onError(e);
+        	 removeDialog(PUBLISH_DIALOG_ID);     
+        }
+
+        public void onCancel() {
+        	super.onCancel();
+        	 removeDialog(PUBLISH_DIALOG_ID);
+        }
+    }
+    
+    private final class LoginDialogListener implements DialogListener {
+        public void onComplete(Bundle values) {
+        	removeDialog(LOGIN_DIALOG_ID);
+            SessionEvents.onLoginSuccess();
+        }
+
+        public void onFacebookError(FacebookError error) {
+        	removeDialog(LOGIN_DIALOG_ID);
+            SessionEvents.onLoginError(error.getMessage());
+        }
+        
+        public void onError(DialogError error) {
+        	removeDialog(LOGIN_DIALOG_ID);
+            SessionEvents.onLoginError(error.getMessage());
+        }
+
+        public void onCancel() {
+        	removeDialog(LOGIN_DIALOG_ID);
+            SessionEvents.onLoginError("Action Canceled");
         }
     }
     
