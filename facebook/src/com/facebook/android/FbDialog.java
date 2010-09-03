@@ -186,7 +186,7 @@ public class FbDialog extends Dialog {
             // launch non-dialog URLs in a full browser
             getContext().startActivity(
                     new Intent(Intent.ACTION_VIEW, Uri.parse(url))); 
-            mSpinner.dismiss();
+            mSpinner.hide();
             return true;
         }
 
@@ -203,9 +203,7 @@ public class FbDialog extends Dialog {
         public void onPageStarted(WebView view, String url, Bitmap favicon) {
             Log.d("Facebook-WebView", "Webview loading URL: " + url);
             super.onPageStarted(view, url, favicon);
-            if (!mSpinner.isShowing()) {
-                mSpinner.show();
-            }
+            mSpinner.show();
         }
 
         @Override
@@ -215,7 +213,7 @@ public class FbDialog extends Dialog {
             if (title != null && title.length() > 0) {
                 mTitle.setText(title);
             }
-            mSpinner.dismiss();
+            mSpinner.hide();
         }   
         
     }
