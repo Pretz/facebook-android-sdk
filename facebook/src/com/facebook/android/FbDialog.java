@@ -30,6 +30,7 @@ import android.util.Log;
 import android.view.Display;
 import android.view.ViewGroup;
 import android.view.Window;
+import android.view.WindowManager;
 import android.webkit.WebView;
 import android.webkit.WebViewClient;
 import android.widget.FrameLayout;
@@ -75,15 +76,16 @@ public class FbDialog extends Dialog {
         
         mContent = new LinearLayout(getContext());
         mContent.setOrientation(LinearLayout.VERTICAL);
+
         setUpTitle();
+
+        setContentView(mContent);
+        WindowManager.LayoutParams params = getWindow().getAttributes(); 
+        params.height = ViewGroup.LayoutParams.FILL_PARENT; 
+        params.width = ViewGroup.LayoutParams.FILL_PARENT;
+        params.softInputMode = WindowManager.LayoutParams.SOFT_INPUT_ADJUST_PAN;
+        getWindow().setAttributes(params);
         setUpWebView();
-        Display display = getWindow().getWindowManager().getDefaultDisplay();
-        final float scale = getContext().getResources().getDisplayMetrics().density;
-        float[] dimensions = display.getWidth() < display.getHeight() ?
-        		DIMENSIONS_PORTRAIT : DIMENSIONS_LANDSCAPE;
-        addContentView(mContent, new FrameLayout.LayoutParams(
-        		(int) (dimensions[0] * scale + 0.5f),
-        		(int) (dimensions[1] * scale + 0.5f)));
         mFirstStart = true;
     }
     
